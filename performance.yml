@@ -1,51 +1,71 @@
 config:
   target: "https://api.todoist.com"
   phases:
-    - duration: 1
-      arrivalRate: 1
+    - duration: 30
+      arrivalRate: 5
       name: "Phase 1"
+    - duration: 45
+      arrivalRate: 7
+      name: "Phase 2"
+    - duration: 15
+      arrivalRate: 3
+      name: "Phase 3"
   defaults:
     headers:
       Authorization: Bearer {{ $processEnvironment.TOKEN }}
       Content-Type: application/json
-  # processor: "./myProcessor.js"
+  processor: "./my-functions.js"
 scenarios:
   - flow:
       # Get all tasks
+      - log: "# Get all tasks"
       - get:
           url: "/rest/v1/tasks"
       # Create a new task
+      - log: "# Create a new task"
+      - function: "generateRandomTaskContent"
       - post:
           url: "/rest/v1/tasks"
           json:
-            content: "Task created with Artillery.io"
+            content: "{{ taskContent }}"
             project_id: 2261446068
             section_id: 42149721
           capture:
             json: "$.id"
             as: "taskId"
-      - log: "- Created task id: {{ taskId }}"
+      - log: "    - Created task id: {{ taskId }}"
       # Get an active task
+      - log: "# Get an active task"
       - get:
           url: "/rest/v1/tasks/{{ taskId }}"
           capture:
             json: "$.content"
             as: "taskContent"
-      - log: "- Active task content: {{ taskContent }}"
+      - log: "    - Active task content: {{ taskContent }}"
       # Update a task
+      - log: "# Update a task"
       - post:
           url: "/rest/v1/tasks/{{ taskId }}"
           json:
-            content: "Updated with Artillery.io"
+            content: "{{ otherContent }}"
             due_string: "Tomorrow"
             priority: 4
+      - get:
+          url: "/rest/v1/tasks/{{ taskId }}"
+          capture:
+            json: "$.content"
+            as: "taskContent"
+      - log: "    - New task content: {{ taskContent }}"
       # Close a task
+      - log: "# Close a task"
       - post:
           url: "/rest/v1/tasks/{{ taskId }}/close"
       # reopen a task
+      - log: "# Reopen a task"
       - post:
           url: "/rest/v1/tasks/{{ taskId }}/reopen"
       # Delete a task
+      - log: "# Delete a task"
       - delete:
           url: "/rest/v1/tasks/{{ taskId }}"
 # For more information: https://artillery.io/docs/script-reference/
